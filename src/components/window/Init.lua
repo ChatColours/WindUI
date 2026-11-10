@@ -1,3 +1,4 @@
+
 -- /* src/components/Window/Init.lua */
 
 local cloneref = (cloneref or clonereference or function(instance)
@@ -41,7 +42,7 @@ return function(Config)
 		ShadowTransparency = Config.ShadowTransparency or 0.6,
 		User = Config.User or {},
 		Footer = Config.Footer or {},
-		Topbar = Config.Topbar or { Height = 52, ButtonsType = "Default" }, -- Default or Mac
+		Topbar = Config.Topbar or { Height = 40, ButtonsType = "Mac" }, -- Default or Mac
 
 		Size = Config.Size,
 
@@ -90,6 +91,7 @@ return function(Config)
 		IsPC = false,
 
 		Gap = 5,
+		SidebarHeaderHeight = 66,
 
 		TopBarButtons = {},
 		AllElements = {},
@@ -209,10 +211,9 @@ return function(Config)
 			1,
 			Window.ScrollBarEnabled and -3 - (Window.UIPadding / 2) or 0,
 			1,
-			not Window.HideSearchBar and -39 - 6 or 0
+			-Window.SidebarHeaderHeight
 		),
-		Position = UDim2.new(0, 0, 1, 0),
-		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 0, Window.SidebarHeaderHeight),
 		BackgroundTransparency = 1,
 		ScrollBarThickness = 0,
 		ElasticBehavior = "Never",
@@ -260,9 +261,14 @@ return function(Config)
 		Visible = true,
 	}, {
 		New("Frame", {
+			Name = "HubHeader",
+			Size = UDim2.new(1, 0, 0, Window.SidebarHeaderHeight),
+			BackgroundTransparency = 1,
+		}),
+		New("Frame", {
 			Name = "Content",
 			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 1, not Window.HideSearchBar and -39 - 6 - Window.UIPadding or -Window.UIPadding / 2),
+			Size = UDim2.new(1, 0, 1, -Window.SidebarHeaderHeight),
 			Position = UDim2.new(0, 0, 1, -Window.UIPadding / 2),
 			AnchorPoint = Vector2.new(0, 1),
 		}),
@@ -811,7 +817,7 @@ return function(Config)
 					Size = UDim2.new(0, 0, 1, 0),
 					BackgroundTransparency = 1,
 					Name = "Center",
-					AnchorPoint = Vector2.new(0, 0.5),
+					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(0, 0, 0.5, 0),
 					AutomaticSize = "Y",
 					Visible = false,
@@ -835,7 +841,7 @@ return function(Config)
 						New("UIListLayout", {
 							FillDirection = "Horizontal",
 							VerticalAlignment = "Center",
-							HorizontalAlignment = "Left",
+							HorizontalAlignment = "Right",
 							Padding = UDim.new(0, Window.UIPadding / 2),
 						}),
 					}),
@@ -866,36 +872,36 @@ return function(Config)
 		}),
 	})
 
-	Creator.AddSignal(Window.UIElements.Main.Main.Topbar.Left:GetPropertyChangedSignal("AbsoluteSize"), function()
-		local LeftWidth = 0
-		local RightWidth = Window.UIElements.Main.Main.Topbar.Right.UIListLayout.AbsoluteContentSize.X
-			/ Config.WindUI.UIScale
+	-- The hub identity lives in the sidebar, below the window controls.
+	-- Reparent the existing title group so SetTitle/SetAuthor still work.
+	local HubHeader = Window.UIElements.SideBarContainer.HubHeader
+	local HubIdentity = Window.UIElements.Main.Main.Topbar.Left.Title
+	HubIdentity.Parent = HubHeader
+	HubIdentity.AutomaticSize = Enum.AutomaticSize.None
+	HubIdentity.Size = UDim2.new(1, -66, 0, 43)
+	HubIdentity.Position = UDim2.fromOffset(51, 8)
+	HubIdentity.LayoutOrder = 0
 
-		LeftWidth = Window.UIElements.Main.Main.Topbar.Left.AbsoluteSize.X / Config.WindUI.UIScale
-		if Window.Topbar.ButtonsType ~= "Default" then
-			LeftWidth = LeftWidth + RightWidth + Window.UIPadding - 4
+	local function UpdateTopbarTagLayout()
+		local Topbar = Window.UIElements.Main.Main.Topbar
+		local ControlWidth = Topbar.Right.UIListLayout.AbsoluteContentSize.X / Config.WindUI.UIScale
+		local TagArea = Topbar.Center
+		if Window.Topbar.ButtonsType == "Default" then
+			TagArea.Position = UDim2.new(1, -ControlWidth - Window.UIPadding - 8, 0.5, 0)
+			TagArea.Size = UDim2.new(1, -ControlWidth - Window.UIPadding * 2 - 8, 1, 0)
+		else
+			local LeftClearance = ControlWidth + Window.UIPadding * 2 + 12
+			TagArea.Position = UDim2.new(1, -Window.UIPadding, 0.5, 0)
+			TagArea.Size = UDim2.new(1, -LeftClearance - Window.UIPadding, 1, 0)
 		end
+	end
 
-		Window.UIElements.Main.Main.Topbar.Center.Position =
-			UDim2.new(0, LeftWidth + (Window.UIPadding / Config.WindUI.UIScale), 0.5, 0)
-		Window.UIElements.Main.Main.Topbar.Center.Size = UDim2.new(
-			1,
-			-LeftWidth
-				- (Window.UIPadding / Config.WindUI.UIScale)
-				- (Window.Topbar.ButtonsType == "Default" and RightWidth + Window.UIPadding or 0),
-			1,
-			0
-		)
-	end)
+	Creator.AddSignal(Window.UIElements.Main.Main.Topbar.Right.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), UpdateTopbarTagLayout)
+	UpdateTopbarTagLayout()
 
 	if Window.Topbar.ButtonsType ~= "Default" then
 		Creator.AddSignal(Window.UIElements.Main.Main.Topbar.Right:GetPropertyChangedSignal("AbsoluteSize"), function()
-			Window.UIElements.Main.Main.Topbar.Left.Position = UDim2.new(
-				0,
-				(Window.UIElements.Main.Main.Topbar.Right.AbsoluteSize.X / Config.WindUI.UIScale) + Window.UIPadding - 4,
-				0,
-				0
-			)
+			UpdateTopbarTagLayout()
 		end)
 	end
 
@@ -1114,9 +1120,10 @@ return function(Config)
 	task.spawn(function()
 		if Window.Icon then
 			local WindowIconContainer = New("Frame", {
-				Size = UDim2.new(0, 22, 0, 22),
+				Size = UDim2.new(0, 30, 0, 30),
+				Position = UDim2.fromOffset(15, 14),
 				BackgroundTransparency = 1,
-				Parent = Window.UIElements.Main.Main.Topbar.Left,
+				Parent = Window.UIElements.SideBarContainer.HubHeader,
 			})
 
 			WindowIcon = Creator.Image(
@@ -2155,8 +2162,9 @@ return function(Config)
 		-- end, 996)
 
 		local SearchLabel = CreateLabel("Search", "search", Window.UIElements.SideBarContainer, true)
-		SearchLabel.Size = UDim2.new(1, -Window.UIPadding / 2, 0, 39)
-		SearchLabel.Position = UDim2.new(0, Window.UIPadding / 2, 0,--[[Window.UIPadding/2]] 0)
+		SearchLabel.Size = UDim2.fromOffset(34, 34)
+		SearchLabel.Position = UDim2.new(1, -42, 0, 13)
+		SearchLabel.Parent = Window.UIElements.SideBarContainer.HubHeader
 
 		Creator.AddSignal(SearchLabel.MouseButton1Click, function()
 			if IsOpen then
@@ -2221,3 +2229,6 @@ return function(Config)
 
 	return Window
 end
+
+
+
