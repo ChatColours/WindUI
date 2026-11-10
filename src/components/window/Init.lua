@@ -286,7 +286,7 @@ return function(Config)
 	end
 
 	Window.UIElements.MainBar = New("Frame", {
-		Size = UDim2.new(1, -Window.UIElements.SideBarContainer.AbsoluteSize.X, 1, -Window.Topbar.Height),
+		Size = UDim2.new(1, -Window.SideBarWidth, 1, -Window.Topbar.Height),
 		Position = UDim2.new(1, 0, 1, 0),
 		AnchorPoint = Vector2.new(1, 1),
 		BackgroundTransparency = 1,
@@ -355,7 +355,7 @@ return function(Config)
 		UserIcon = New("TextButton", {
 			Size = UDim2.new(
 				0,
-				Window.UIElements.SideBarContainer.AbsoluteSize.X - (Window.UIPadding / 2),
+				Window.SideBarWidth - (Window.UIPadding / 2),
 				0,
 				42 + Window.UIPadding
 			),
@@ -878,8 +878,8 @@ return function(Config)
 	local HubIdentity = Window.UIElements.Main.Main.Topbar.Left.Title
 	HubIdentity.Parent = HubHeader
 	HubIdentity.AutomaticSize = Enum.AutomaticSize.None
-	HubIdentity.Size = UDim2.new(1, -66, 0, 43)
-	HubIdentity.Position = UDim2.fromOffset(51, 8)
+	HubIdentity.Size = UDim2.new(1, -88, 0, 43)
+	HubIdentity.Position = UDim2.fromOffset(49, 9)
 	HubIdentity.LayoutOrder = 0
 
 	local function UpdateTopbarTagLayout()
@@ -1120,8 +1120,8 @@ return function(Config)
 	task.spawn(function()
 		if Window.Icon then
 			local WindowIconContainer = New("Frame", {
-				Size = UDim2.new(0, 30, 0, 30),
-				Position = UDim2.fromOffset(15, 14),
+				Size = UDim2.new(0, 26, 0, 26),
+				Position = UDim2.fromOffset(12, 16),
 				BackgroundTransparency = 1,
 				Parent = Window.UIElements.SideBarContainer.HubHeader,
 			})
@@ -2161,10 +2161,27 @@ return function(Config)
 		--     Window.CanResize = false
 		-- end, 996)
 
-		local SearchLabel = CreateLabel("Search", "search", Window.UIElements.SideBarContainer, true)
-		SearchLabel.Size = UDim2.fromOffset(34, 34)
-		SearchLabel.Position = UDim2.new(1, -42, 0, 13)
-		SearchLabel.Parent = Window.UIElements.SideBarContainer.HubHeader
+		local SearchIconData = Creator.Icon("search")
+		local SearchLabel = New("TextButton", {
+			Name = "SidebarSearch",
+			Size = UDim2.fromOffset(30, 30),
+			Position = UDim2.new(1, -36, 0, 16),
+			Parent = Window.UIElements.SideBarContainer.HubHeader,
+			BackgroundTransparency = 1,
+			Text = "",
+		}, {
+			New("ImageLabel", {
+				Name = "Icon",
+				Size = UDim2.fromOffset(17, 17),
+				Position = UDim2.fromScale(0.5, 0.5),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundTransparency = 1,
+				Image = SearchIconData and SearchIconData[1] or "",
+				ImageRectOffset = SearchIconData and SearchIconData[2] and SearchIconData[2].ImageRectPosition,
+				ImageRectSize = SearchIconData and SearchIconData[2] and SearchIconData[2].ImageRectSize,
+				ThemeTag = { ImageColor3 = "Text" },
+			}),
+		})
 
 		Creator.AddSignal(SearchLabel.MouseButton1Click, function()
 			if IsOpen then
